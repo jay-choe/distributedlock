@@ -1,8 +1,9 @@
 package com.example.distributedlock;
 
+import com.example.distributedlock.config.RedisConfig;
 import com.example.distributedlock.entity.Stock;
 import com.example.distributedlock.repository.StockRepository;
-import jakarta.persistence.EntityManager;
+import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -16,7 +17,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 
-@SpringBootTest
+@SpringBootTest(classes = RedisConfig.class)
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 class DistributedlockApplicationTests {
     @Autowired
@@ -46,6 +47,10 @@ class DistributedlockApplicationTests {
     @DisplayName("Test for initializing")
     void initTest() {
 
+        /**
+         * Test For RDS Connection
+         */
+
         Stock stock = Stock.builder()
             .name("stock1")
             .quantity(1L)
@@ -56,5 +61,16 @@ class DistributedlockApplicationTests {
         Assertions.assertNotNull(stock1.getId());
 
         stockRepository.delete(stock1);
+
+        /**
+         * Test For Redis Connection
+         */
+
+        String result = redisTemplate.getConnectionFactory()
+            .getConnection()
+            .ping();
+
+        Assertions.assertEquals("PONG", result);
+
     }
 }
