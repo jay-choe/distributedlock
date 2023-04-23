@@ -30,7 +30,7 @@ public class Stock {
         this.quantity = quantity;
     }
 
-    public void increase() {
-        this.quantity = quantity + 1;
+    public void increase(long toIncrease) {
+        this.quantity = this.quantity + toIncrease;
     }
 }

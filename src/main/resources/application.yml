@@ -3,9 +3,9 @@ spring:
     url: jdbc:tc:mysql:8:///
     username: testuser
     password: testpass
-
+    hikari:
+      maximum-pool-size: 40
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect
-    show-sql: true
     hibernate:
       ddl-auto: create
