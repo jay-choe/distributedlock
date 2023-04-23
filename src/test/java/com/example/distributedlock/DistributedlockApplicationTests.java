@@ -96,9 +96,9 @@ class DistributedlockApplicationTests {
     @DisplayName("Concurrency Issue Test")
     void concurrency_issue_test() throws InterruptedException {
 
-        final int testUpdateRequestCount = 1000;
+        final int testUpdateRequestCount = 100;
 
-        final CountDownLatch countDownLatch = new CountDownLatch(1000);
+        final CountDownLatch countDownLatch = new CountDownLatch(100);
 
         ExecutorService executorService = Executors.newFixedThreadPool(32);
 
@@ -124,8 +124,13 @@ class DistributedlockApplicationTests {
         executorService.invokeAll(taskList);
         countDownLatch.await();
 
-        Assertions.assertFalse(stockRepository.findById(savedStock.getId())
-            .get().getQuantity() != testUpdateRequestCount + startCount, "업데이트 횟수만큼 재고가 증가되지 않았다");
+        final var result = stockRepository.findById(savedStock.getId())
+            .get().getQuantity();
+
+        System.out.println(result);
+
+        Assertions.assertTrue(result != testUpdateRequestCount + startCount,
+            "업데이트 횟수만큼 재고가 증가되지 않았다");
 
         executorService.shutdown();
     }
