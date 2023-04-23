@@ -4,6 +4,7 @@ import com.example.distributedlock.config.RedisConfig;
 import com.example.distributedlock.entity.Stock;
 import com.example.distributedlock.repository.StockRepository;
 import com.example.distributedlock.service.LettuceLockService;
+import com.example.distributedlock.service.RedissonLockService;
 import com.example.distributedlock.service.StockService;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,9 @@ class DistributedlockApplicationTests {
 
     @Autowired
     LettuceLockService lettuceLockService;
+
+    @Autowired
+    RedissonLockService redissonLockService;
 
     @Autowired
     StockRepository stockRepository;
@@ -148,7 +152,7 @@ class DistributedlockApplicationTests {
 
         for (int i = 0; i < testUpdateRequestCount; i++) {
             taskList.add(() -> {
-                lettuceLockService.increaseStock(savedStock.getId(), 1);
+                lettuceLockService.increaseStock(savedStock.getId());
                 countDownLatch.countDown();
                 return null;
             });
@@ -165,6 +169,49 @@ class DistributedlockApplicationTests {
             .get().getQuantity();
 
         Assertions.assertTrue(result == testUpdateRequestCount + startCount, "재고 증가 동시성이 보장된다.");
+        executorService.shutdown();
+    }
+
+    @Test
+    @DisplayName("Redisson Pub-Sub type Lock Concurrency Issue Resolve Test")
+    void redisson_pub_sub_lock_concurrency_issue_resolve_test() throws InterruptedException {
+        final int testUpdateRequestCount = 100;
+
+        final CountDownLatch countDownLatch = new CountDownLatch(100);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(32);
+
+        final long startCount = 1L;
+
+        final Stock toSave = Stock.builder()
+            .name("testStock")
+            .quantity(startCount)
+            .build();
+
+        final Stock savedStock = stockRepository.saveAndFlush(toSave);
+
+        List<Callable<Void>> taskList = new ArrayList<>(testUpdateRequestCount);
+
+        for (int i = 0; i < testUpdateRequestCount; i++) {
+            taskList.add(() -> {
+                redissonLockService.increaseStock(savedStock.getId());
+                countDownLatch.countDown();
+                return null;
+            });
+        }
+
+        executorService.invokeAll(taskList);
+        countDownLatch.await();
+
+        Assertions.assertDoesNotThrow(() -> {
+            stockRepository.findById(savedStock.getId()).get();
+        }, "결과값은 존재한다");
+
+        final var result = stockRepository.findById(savedStock.getId())
+            .get().getQuantity();
+
+        Assertions.assertEquals(testUpdateRequestCount + startCount, (long) result,
+            "재고 증가 동시성이 보장된다.");
         executorService.shutdown();
     }
 }

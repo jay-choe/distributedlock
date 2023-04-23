@@ -7,24 +7,21 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class LettuceLockService implements LockService {
+public class LettuceLockService {
 
     private final RedisTemplate<String, String> redisTemplate;
     private final StockService stockService;
 
-    @Override
     public boolean lock(long key) {
         return Boolean.TRUE.equals(redisTemplate.opsForValue()
             .setIfAbsent(key + "", "lock", Duration.ofSeconds(2)));
     }
 
-    @Override
-    public boolean unlock(long key) {
-        return Boolean.TRUE.equals(redisTemplate.delete(key + ""));
+    public void unlock(long key) {
+        redisTemplate.delete(key + "");
     }
 
-    @Override
-    public void increaseStock(long key, long qty) {
+    public void increaseStock(long key) {
 
         while (!lock(key)) {
             // Atomic operation
