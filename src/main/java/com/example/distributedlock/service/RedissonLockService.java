@@ -22,7 +22,7 @@ public class RedissonLockService {
             boolean success = lock.tryLock(WAIT_TIME, OCCUPATION_TIME, TimeUnit.SECONDS);
 
             if (!success) {
-                // retry -> just test code..
+                // retry -> just test code.. (recursion)
                 increaseStock(key);
             }
 
